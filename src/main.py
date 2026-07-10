@@ -14,7 +14,7 @@ if hasattr(graph, 'num_nodes') and graph.num_nodes is not None:
 else:
     num_nodes = int(torch.max(torch.cat([pos_edge_index, neg_edge_index], dim=1)).item()) + 1
 
-model = SignedGCN(in_channels=64, hidden_channels=32, num_layers=2)
+model = SignedGCN(in_channels=64, hidden_channels=64, num_layers=2)
 
 x = model.create_spectral_features(pos_edge_index, neg_edge_index, num_nodes=num_nodes)
 
@@ -26,10 +26,11 @@ x = x.to(device)
 pos_edge_index = pos_edge_index.to(device)
 neg_edge_index = neg_edge_index.to(device)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=50)
 
 print("Training...")
-train_model(model, x, pos_edge_index, neg_edge_index, optimizer, epochs=300)
+train_model(model, x, pos_edge_index, neg_edge_index, optimizer, scheduler, epochs=500)
 print("Finished !")
 
 model.eval()

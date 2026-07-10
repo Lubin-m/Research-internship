@@ -1,6 +1,6 @@
 import torch
 
-def train_model(model, x, pos_edge_index, neg_edge_index, optimizer, epochs=100):
+def train_model(model, x, pos_edge_index, neg_edge_index, optimizer,scheduler=None, epochs=100):
     model.train()
     
     for epoch in range(epochs):
@@ -12,6 +12,8 @@ def train_model(model, x, pos_edge_index, neg_edge_index, optimizer, epochs=100)
         
         loss.backward()
         optimizer.step()
+        if scheduler is not None:
+            scheduler.step(loss)
 
         if epoch % 30 == 0:
             print(f"Epoch {epoch} | Loss: {loss.item():.4f}")
