@@ -18,6 +18,14 @@ model = SignedGCN(in_channels=64, hidden_channels=32, num_layers=2)
 
 x = model.create_spectral_features(pos_edge_index, neg_edge_index, num_nodes=num_nodes)
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f"Appareil utilisé pour l'entraînement : {device}")
+
+model = model.to(device)
+x = x.to(device)
+pos_edge_index = pos_edge_index.to(device)
+neg_edge_index = neg_edge_index.to(device)
+
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 print("Training...")
