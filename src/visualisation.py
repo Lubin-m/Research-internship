@@ -4,15 +4,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
+from preprocessing import load_and_prepare_graph
+
 print("Loading data...")
 
-# 1. Load Embeddings
+# Load Embeddings
 with open("embeddings.json", "r") as f:
     embeddings_list = json.load(f)
 
 embeddings_matrix = np.array(embeddings_list)
 
-# 2. Map person_id to their political party
+# Map person_id to their political party
 id_to_party = {}
 with open("data/raw/all_votes_person_id.csv", "r", encoding="utf-8") as f:
     reader = csv.DictReader(f)
@@ -27,30 +29,70 @@ with open("data/raw/all_votes_person_id.csv", "r", encoding="utf-8") as f:
 
 print("Calcul de l'axe polarisé Gauche-Droite...")
 
-# --- LA SOLUTION : PROJECTION VECTORIELLE ---
-# On isole les positions brutes des deux extrêmes
 afd_embeds = [embeddings_matrix[i] for i in range(len(embeddings_list)) if id_to_party.get(i) == "AfD"]
 linke_embeds = [embeddings_matrix[i] for i in range(len(embeddings_list)) if id_to_party.get(i) == "DIE LINKE"]
 
-# On calcule leur centre de gravité respectif
 afd_center = np.mean(afd_embeds, axis=0)
 linke_center = np.mean(linke_embeds, axis=0)
 
-# On crée le vecteur "Axe Idéologique" qui va de Die Linke vers l'AfD
 lr_axis = afd_center - linke_center
 lr_axis_normalized = lr_axis / np.linalg.norm(lr_axis)
 
-# On projette chaque député sur cet axe spécifique (Produit scalaire)
 x_coords = []
 for emb in embeddings_matrix:
-    # Projection = (Position_député - Pôle_Gauche) * Vecteur_Normalisé
     proj = np.dot(emb - linke_center, lr_axis_normalized)
     x_coords.append(proj)
 
 x_coords = np.array(x_coords)
-# ---------------------------------------------
 
-# 3. Define the specific layout
+# =====================================================================
+# --- NOUVEAU : PARTIE BENCHMARKING (ÉVALUATION) ---
+# =====================================================================
+print("Chargement du graphe pour évaluation...")
+graph = load_and_prepare_graph("data/processed/bundestag_signed.json")
+pos_edges_np = graph.pos_edge_index.cpu().numpy()
+neg_edges_np = graph.neg_edge_index.cpu().numpy()
+
+# 1. Discrétisation en 8 intervalles
+num_bins = 8
+bins = np.linspace(min(x_coords), max(x_coords), num_bins + 1)
+node_assignments = np.digitize(x_coords, bins) - 1
+node_assignments[node_assignments == num_bins] = num_bins - 1  # Sécurité pour la valeur max
+
+# 2. Fonction de calcul du désaccord (Disagreement)
+def calculate_disagreement(pos_sources, pos_targets, neg_sources, neg_targets, assignments):
+    errors = 0
+    
+    # Règle 1 : Liens Positifs (+) -> Doivent se chevaucher (distance <= 1)
+    for u, v in zip(pos_sources, pos_targets):
+        if abs(assignments[u] - assignments[v]) > 1:
+            errors += 1
+            
+    # Règle 2 : Liens Négatifs (-) -> Doivent être disjoints (distance > 1)
+    for u, v in zip(neg_sources, neg_targets):
+        if abs(assignments[u] - assignments[v]) <= 1:
+            errors += 1
+            
+    total_edges = len(pos_sources) + len(neg_sources)
+    error_rate = (errors / total_edges) * 100 if total_edges > 0 else 0
+    
+    return errors, total_edges, error_rate
+
+# 3. Calcul et affichage
+erreurs, total_aretes, score_final = calculate_disagreement(
+    pos_edges_np[0], pos_edges_np[1], 
+    neg_edges_np[0], neg_edges_np[1], 
+    node_assignments
+)
+
+print("\n=== RÉSULTATS DU BENCHMARK ===")
+print(f"Total des arêtes évaluées : {total_aretes}")
+print(f"Nombre d'arêtes violées (Disagreement) : {erreurs}")
+print(f"Score d'erreur de ton GNN : {score_final:.2f}%\n")
+# =====================================================================
+
+
+# Define the specific layout
 party_order = ["DIE LINKE", "GRÜNE", "SPD", "FDP", "CDU/CSU", "AfD"]
 party_colors = {
     "DIE LINKE": "hotpink",
@@ -67,7 +109,7 @@ for i, x in enumerate(x_coords):
     if party in party_data:
         party_data[party].append(x)
 
-# 4. Create the plot
+# Create the plot
 fig, ax = plt.subplots(figsize=(14, 6))
 
 x_min, x_max = min(x_coords) - 0.1, max(x_coords) + 0.1
@@ -87,7 +129,7 @@ for y_index, party in enumerate(party_order, start=1):
     jitter = np.random.normal(0, 0.15, size=len(xs))
     ax.scatter(xs, y_index + jitter, c=color, edgecolors='black', linewidth=0.5, alpha=0.7, s=30, zorder=2)
 
-# 5. Styling
+# Styling
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 ax.spines['left'].set_visible(False)

@@ -1,6 +1,7 @@
 import torch
+import torch.nn.functional as F
 
-def train_model(model, x, pos_edge_index, neg_edge_index, optimizer,scheduler=None, epochs=100):
+def train_model(model, x, pos_edge_index, neg_edge_index, neg_weight, optimizer, scheduler=None, epochs=100):
     model.train()
     
     for epoch in range(epochs):
@@ -8,10 +9,18 @@ def train_model(model, x, pos_edge_index, neg_edge_index, optimizer,scheduler=No
         
         z = model(x, pos_edge_index, neg_edge_index)
         
-        loss = model.loss(z, pos_edge_index, neg_edge_index)
+        # Loss function
+        pos_pred = (z[pos_edge_index[0]] * z[pos_edge_index[1]]).sum(dim=1)
+        neg_pred = (z[neg_edge_index[0]] * z[neg_edge_index[1]]).sum(dim=1)
+        
+        pos_loss = -F.logsigmoid(pos_pred).mean()
+        neg_loss = -F.logsigmoid(-neg_pred).mean()
+        
+        loss = pos_loss + (neg_weight * neg_loss) # As their is 80% positives edges and only 20% negatives, I put more weight to the negatives ones because they are more importante usually to define political structure
         
         loss.backward()
         optimizer.step()
+        
         if scheduler is not None:
             scheduler.step(loss)
 
