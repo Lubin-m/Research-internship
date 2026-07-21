@@ -29,7 +29,7 @@ x = x.to(device)
 pos_edge_index = pos_edge_index.to(device)
 neg_edge_index = neg_edge_index.to(device)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=50)
 
 print("Training...")

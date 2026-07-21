@@ -8,7 +8,8 @@ def train_model(model, x, pos_edge_index, neg_edge_index, neg_weight, optimizer,
         optimizer.zero_grad()
         
         z = model(x, pos_edge_index, neg_edge_index)
-        
+        z = F.normalize(z, p=2, dim=1) # Avoid model collapse
+
         # Loss function
         pos_pred = (z[pos_edge_index[0]] * z[pos_edge_index[1]]).sum(dim=1)
         neg_pred = (z[neg_edge_index[0]] * z[neg_edge_index[1]]).sum(dim=1)
