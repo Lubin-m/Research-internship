@@ -22,7 +22,7 @@ def train_model(model, x, pos_edge_index, neg_edge_index, neg_weight, optimizer,
         optimizer.step()
         
         if scheduler is not None:
-            scheduler.step(loss)
+            scheduler.step(loss.item())
 
         if epoch % 30 == 0:
             print(f"Epoch {epoch} | Loss: {loss.item():.4f}")

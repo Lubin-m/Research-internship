@@ -9,7 +9,8 @@ from preprocessing import load_and_prepare_graph
 print("Loading data...")
 
 # Load Embeddings
-with open("embeddings.json", "r") as f:
+json_path = "/content/Research-internship/embeddings.json"
+with open(json_path, "r") as f:
     embeddings_list = json.load(f)
 
 embeddings_matrix = np.array(embeddings_list)

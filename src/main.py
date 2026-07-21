@@ -41,5 +41,7 @@ with torch.no_grad(): # gives the final result
     final_embeddings = model(x, pos_edge_index, neg_edge_index)
     embeddings_list = final_embeddings.tolist() # save the result in a simple list to use it for visualisation
 
-with open("embeddings.json", "w") as f:
+json_path = "/content/Research-internship/embeddings.json"
+
+with open(json_path, "w") as f:
     json.dump(embeddings_list, f) # transform the list into a .json
