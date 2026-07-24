@@ -27,7 +27,7 @@ class Ideology1D(nn.Module):
         # L'entonnoir : PyTorch Geometric génère par défaut 2x les hidden_channels 
         # (64 pour les arêtes positives, 64 pour les négatives = 128 au total)
         # On va projeter ces 128 dimensions vers 1 seule ligne !
-        self.projector = nn.Linear(128, 1)
+        self.projector = nn.Linear(64, 1)
 
     def forward(self, x, pos_edge_index, neg_edge_index):
         # Étape A : Le GNN fait son travail complexe
