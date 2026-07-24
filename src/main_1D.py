@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import json
 from torch_geometric.nn import SignedGCN
 from preprocessing import load_and_prepare_graph
@@ -17,7 +18,28 @@ print(f"Weight applied to neg edges : {neg_weight:.2f}")
 
 num_nodes = int(torch.max(torch.cat([pos_edge_index, neg_edge_index], dim=1)).item()) + 1 
 
-model = SignedGCN(in_channels=64, hidden_channels=128, num_layers=2)
+class Ideology1D(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # Le cerveau : on laisse le modèle de base avec assez d'espace (ex: 64)
+        self.sgnn = SignedGCN(in_channels=64, hidden_channels=64, num_layers=2)
+        
+        # L'entonnoir : PyTorch Geometric génère par défaut 2x les hidden_channels 
+        # (64 pour les arêtes positives, 64 pour les négatives = 128 au total)
+        # On va projeter ces 128 dimensions vers 1 seule ligne !
+        self.projector = nn.Linear(128, 1)
+
+    def forward(self, x, pos_edge_index, neg_edge_index):
+        # Étape A : Le GNN fait son travail complexe
+        z = self.sgnn(x, pos_edge_index, neg_edge_index)
+        
+        # Étape B : On écrase le nuage de points sur une ligne droite
+        z_1d = self.projector(z)
+        
+        # Étape C : On borne entre -1 et +1 (SANS fonction ReLU)
+        return torch.tanh(z_1d)
+    
+model = Ideology1D()
 
 x = model.create_spectral_features(pos_edge_index, neg_edge_index, num_nodes=num_nodes) # instead of giving 1 to every node, this function gives smart starting position to every node
 
