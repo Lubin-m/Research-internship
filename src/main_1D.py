@@ -41,7 +41,7 @@ class Ideology1D(nn.Module):
     
 model = Ideology1D()
 
-x = model.create_spectral_features(pos_edge_index, neg_edge_index, num_nodes=num_nodes) # instead of giving 1 to every node, this function gives smart starting position to every node
+x = model.sgnn.create_spectral_features(pos_edge_index, neg_edge_index, num_nodes=num_nodes) # instead of giving 1 to every node, this function gives smart starting position to every node
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') # defines the device used (GPU if there is one)
 print(f"Appareil utilisé pour l'entraînement : {device}")
