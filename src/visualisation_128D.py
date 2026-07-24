@@ -9,7 +9,7 @@ from preprocessing import load_and_prepare_graph
 print("Loading data...")
 
 # Load Embeddings
-json_path = "/content/Research-internship/embeddings.json"
+json_path = "/content/Research-internship/embeddings_128D.json"
 with open(json_path, "r") as f:
     embeddings_list = json.load(f)
 

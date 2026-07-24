@@ -2,7 +2,7 @@ import torch
 import json
 from torch_geometric.nn import SignedGCN
 from preprocessing import load_and_prepare_graph
-from utils import train_model_1D
+from utils import train_model
 
 graph = load_and_prepare_graph("data/processed/bundestag_signed.json")
 
@@ -33,7 +33,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=50)
 
 print("Training...")
-train_model_1D(model, x, pos_edge_index, neg_edge_index, neg_weight, optimizer, scheduler, epochs=500)
+train_model(model, x, pos_edge_index, neg_edge_index, neg_weight, optimizer, scheduler, epochs=500)
 print("Finished !")
 
 model.eval()
@@ -41,7 +41,7 @@ with torch.no_grad(): # gives the final result
     final_embeddings = model(x, pos_edge_index, neg_edge_index)
     embeddings_list = final_embeddings.tolist() # save the result in a simple list to use it for visualisation
 
-json_path = "/content/Research-internship/embeddings.json"
+json_path = "/content/Research-internship/embeddings_128D.json"
 
 with open(json_path, "w") as f:
     json.dump(embeddings_list, f) # transform the list into a .json
